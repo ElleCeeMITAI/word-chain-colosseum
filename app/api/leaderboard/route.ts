@@ -12,7 +12,8 @@ export async function GET() {
 
     return NextResponse.json({ leaderboard: agents });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.error('leaderboard error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', detail: msg }, { status: 500 });
   }
 }
