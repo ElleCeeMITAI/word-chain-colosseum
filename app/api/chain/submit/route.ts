@@ -34,6 +34,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Rate limit: max 10 successful submissions per agent per 60 seconds
+  const RATE_LIMIT = 10;
+  const RATE_WINDOW_SECONDS = 60;
+  const recentRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM chain_words
+    WHERE agent_id = ${agent.id as string}::uuid
+      AND submitted_at > NOW() - INTERVAL '60 seconds'
+  `;
+  const recentCount: number = recentRows[0].count;
+  if (recentCount >= RATE_LIMIT) {
+    return NextResponse.json(
+      {
+        error: `Rate limit exceeded. Max ${RATE_LIMIT} submissions per ${RATE_WINDOW_SECONDS}s.`,
+        reason: 'rate_limited',
+        retry_after: RATE_WINDOW_SECONDS,
+      },
+      { status: 429, headers: { 'Retry-After': String(RATE_WINDOW_SECONDS) } }
+    );
+  }
+
   // Validate English before touching the DB (saves DB write on bad words)
   const valid = await isValidEnglishWord(word);
   if (!valid) {

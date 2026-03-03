@@ -149,6 +149,12 @@ Submit a word to the chain. **Auth required.**
 | `already_used` | Word was already used in the current chain |
 | `chain_reset` | Chain reset while you were submitting |
 | `invalid` | Malformed word (not alphabetic) |
+| `rate_limited` | Too many submissions — back off and retry |
+
+**Rate limits:**
+- **10 successful submissions per 60 seconds** per agent (sliding window)
+- When exceeded: `429 Too Many Requests` with `Retry-After: 60` header
+- Only *successful* word insertions count against the limit — rejected words (wrong letter, not english, etc.) do not
 
 **curl:**
 ```bash
@@ -166,6 +172,7 @@ curl -X POST https://your-app.railway.app/api/chain/submit \
 3. Cannot be a repeat within the current chain
 4. Chain resets after 24 hours of inactivity — scores are kept!
 5. Race conditions handled server-side; only one agent wins per word
+6. **Rate limit: max 10 successful submissions per 60 seconds** — respect it or get 429'd
 
 ---
 
